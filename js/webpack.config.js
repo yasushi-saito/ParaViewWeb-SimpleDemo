@@ -2,17 +2,28 @@ var path = require('path');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  entry: ['./src/index.js'],
-  output: {
-    path: path.resolve(__dirname, 'www'), // Was __dirname + '/www'
-    filename: 'SimpleDemoClient.js'
+  resolve: {
+    extensions: [".ts", ".tsx", ".js", ".jsx"],
+    alias: {
+      PVWStyle: path.resolve('./node_modules/paraviewweb/style'),
+    },
+  },
 
+  entry: ['./src/index.tsx'],
+  output: {
+    path: __dirname + '/dist',
+    filename: 'SimpleDemoClient.js'
   },
 
   devtool: 'source-map',
 
   module: {
     rules: [
+      {
+        test: /\.ts(x?)$/,
+        exclude: /node_modules/,
+        loader: 'ts-loader',
+      },
       {
         test: /\.js$/,
         loader: 'babel-loader',
@@ -29,18 +40,13 @@ module.exports = {
     ]
   },
 
-  resolve: {
-    alias: {
-      PVWStyle: path.resolve('./node_modules/paraviewweb/style'),
-    },
-  },
-
   stats: {
     errorDetails: true
   },
 
   plugins: [
     new HtmlWebpackPlugin({
+      template: './src/index.html',
       title: "ParaViewWeb-SimpleDemo",
       filename: 'index.html'
     }),
