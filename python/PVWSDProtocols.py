@@ -63,10 +63,10 @@ class PVWSDTest(pv_protocols.ParaViewWebProtocol):
         self.renderView1.ResetCamera()
 
         # Properties modified on cone1
-        self.cone1.Resolution = 12
+        self.cone1.Resolution = 100
 
         # change solid color
-        self.cone1Display.DiffuseColor = [0.666, 0.0, 1.0]
+        self.cone1Display.DiffuseColor = [1.0, 0.666, 0.333]
 
         # reset view to fit data
         self.renderView1.ResetCamera()
@@ -75,8 +75,8 @@ class PVWSDTest(pv_protocols.ParaViewWebProtocol):
         self.renderView1.Update()
 
         # current camera placement for renderView1
-        self.renderView1.CameraPosition = [1.25, -3.0, -0.4]
-        self.renderView1.CameraViewUp = [0.75, 0.2, 0.6]
+        self.renderView1.CameraPosition = [1.25, 3.0, 2]
+        self.renderView1.CameraViewUp = [-0.75, 0.2, -0.6]
         self.renderView1.CameraParallelScale = 0.85
 
         ##################################################
@@ -141,4 +141,3 @@ class PVWSDTest(pv_protocols.ParaViewWebProtocol):
         self.colorToggle = not self.colorToggle
 
         return "******** executed change color with: " + str(arg1) + str(arg2) + " *******"
-

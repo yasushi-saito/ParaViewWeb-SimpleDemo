@@ -35,51 +35,65 @@ const config = { sessionURL: 'ws://localhost:1234/ws' };
 // pvpython-run server.
 const smartConnect = SmartConnect.newInstance({ config });
 
-type Model = {pvwClient: any};
+type Model = {
+  rpcClient: RpcClient;
+}
 
 // This is just a global object we can use to attach data to, in order to
 // access it from other scopes.
-var model: Model = {pvwClient: null};
+var model: Model = {rpcClient: null};
 
-// This is a hash of functions that return protocols.  For this example, we
-// have only one, called 'pvwsdService'.  You could have more than one, though
-// I'm not sure why you'd need that.
-const pvwsdProtocols = {
-  pvwsdService: (session: any) => {
+// Runs our RPC protocol.
+class RpcClient {
+  // paraview/vtk websocket session object.
+  private session: any;
+  // Instance of RemoteRenderer
+  private renderer: any;
 
-    // We return a hash of functions, each of which invokes an RPC call.  The
-    // 'session.call' function takes the name of an remote procedure and a list
-    // of arguments.
-    return {
-      changeColor: (arg1: string, arg2: string) => {
-        // The string here exactly matches a string in the @exportRPC decorator
-        // in the PVWSDProtocols.py file.  Note that the RPC names must be
-        // lower case only.  This is a limitation of wslink, I believe.
-        session.call('pvwsdprotocol.change.color', [ arg1, arg2 ])
-          .then((result: any) => console.log('result: ' + result));
-        console.log("******* pressed Change Color *******");
-      },
+  constructor(connection: any, renderer: any) {
+    this.session = connection.getSession();
+    this.renderer = renderer;
+  }
 
-      showCone: () => {
-        session.call('pvwsdprotocol.show.cone', [])
-          .then((result: any) => console.log('result' + result));
-        console.log("******* pressed Show Cone *******");
-      },
+  changeColor(arg1: string, arg2: string) {
+    console.log("******* pressed Change Color *******");
+    // The string here exactly matches a string in the @exportRPC decorator
+    // in the PVWSDProtocols.py file.  Note that the RPC names must be
+    // lower case only.  This is a limitation of wslink, I believe.
+    this.session.call('pvwsdprotocol.change.color', [arg1, arg2])
+      .then((result: any) => {
+        console.log('result: ' + result);
+        this.renderer.render();
+      });
+  }
 
-      hideCone: () => {
-        session.call('pvwsdprotocol.hide.cone', [])
-          .then((result: any) => console.log('result' + result));
-        console.log("******* pressed Hide Cone *******");
-      },
+  showCone() {
+    console.log("******* pressed Show Cone *******");
+    this.session.call('pvwsdprotocol.show.cone', [])
+      .then((result: any) => {
+        console.log('result' + result);
+        this.renderer.render();
+      });
+  }
 
-      changeSides: (N: number) => {
-        session.call('pvwsdprotocol.change.sides', [ N ])
-          .then((result: any) => console.log('result: ' + result));
-        console.log("******* adjusted number of sides ********");
-      },
-    };
-  },
-};
+  hideCone() {
+    console.log("******* pressed Hide Cone *******");
+    this.session.call('pvwsdprotocol.hide.cone', [])
+      .then((result: any) => {
+        console.log('result' + result);
+        this.renderer.render();
+      });
+  }
+
+  changeSides(n: number) {
+    console.log("******* adjusted number of sides ********");
+    this.session.call('pvwsdprotocol.change.sides', [n])
+      .then((result: any) => {
+        console.log('result: ' + result);
+        this.renderer.render();
+      });
+  }
+}
 
 type PanelState = {
   // The state of the controls is really just the N on the slider.  There is
@@ -107,16 +121,16 @@ class PVWSDControlPanel extends React.Component<{}, PanelState> {
 
     console.log(typeof e.target.value);
     // Communicate it to the server.
-    model.pvwClient.pvwsdService.changeSides(e.target.value);
+    model.rpcClient.changeSides(e.target.value);
   }
 
   render() {
     return (
             <div style={{width: '100%', display: 'table'}}>
               <div style={{display: 'table-cell'}}>
-                <button onClick={() => model.pvwClient.pvwsdService.changeColor('pink','purple')}>Change Color</button>
-                <button onClick={() => model.pvwClient.pvwsdService.showCone()}>Show Cone</button>
-                <button onClick={() => model.pvwClient.pvwsdService.hideCone()}>Hide Cone</button>
+                <button onClick={() => model.rpcClient.changeColor('pink','purple')}>Change Color</button>
+                <button onClick={() => model.rpcClient.showCone()}>Show Cone</button>
+                <button onClick={() => model.rpcClient.hideCone()}>Hide Cone</button>
               </div>
               <div style={{display: 'table-cell'}}>
                 <NumberSliderWidget value={this.state.n}
@@ -133,31 +147,32 @@ type RenderWindowProps = {
 
 class PVWSDRenderWindow extends React.Component<RenderWindowProps, {}> {
   private pvTarget = React.createRef<HTMLDivElement>();
+  private rpcClient: RpcClient;
   private renderer: any = null; // RemoteRenderer
   private connector: any;
 
   constructor(props: RenderWindowProps) {
     super(props);
     this.connector = props.connector;
-    console.log("CONNECT", this.connector);
 
     // Create a callback to be executed when the connection is made.
     this.connector.onConnectionReady((connection: any) => {
       // The createClient method takes a connection, a list of predefined protocols
       // to use, and a function that returns
-      model.pvwClient =
+      const pvwClient =
         ParaViewWebClient.createClient(connection,
                                        [
                                          'MouseHandler',   // <--- These are pre-defined.
                                          'ViewPort',
                                          'ViewPortImageDelivery',
-                                       ],
-                                       pvwsdProtocols);    // <-- These are yours.
+                                       ]);
 
       const targetWindow = this.pvTarget.current;
-
+      // targetWindow.renderer = this.renderer;
       // Now build the HTML element that will display the goods.
-      this.renderer = new RemoteRenderer(model.pvwClient);
+      this.renderer = new RemoteRenderer(pvwClient);
+      this.rpcClient = new RpcClient(connection, this.renderer);
+      model.rpcClient = this.rpcClient;
       this.renderer.setContainer(targetWindow);
       this.renderer.onImageReady(() => {
         console.log('image ready (for next command)');
