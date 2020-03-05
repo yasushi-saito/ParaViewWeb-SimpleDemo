@@ -15,6 +15,7 @@
 # import to process args
 import os
 import sys
+import logging
 
 # import paraview modules.
 from paraview.web import pv_wslink
@@ -83,7 +84,7 @@ class PVWSDServer(pv_wslink.PVServerProtocol):
         simple.GetRenderView().Background2 = [0, 0, 0]
 
         # Initialize our scene.
-        PVWSDTest.drawCone()
+        PVWSDTest.drawBunny()
 
         # Update interaction mode
         pxm = simple.servermanager.ProxyManager()
@@ -104,14 +105,10 @@ class PVWSDServer(pv_wslink.PVServerProtocol):
 # =============================================================================
 
 if __name__ == "__main__":
-    # Create argument parser
+    logging.basicConfig(level=logging.INFO)
     parser = argparse.ArgumentParser(description="PVWSD")
-
-    # Add arguments with argparse.
     server.add_arguments(parser)
     PVWSDServer.add_arguments(parser)
     args = parser.parse_args()
     PVWSDServer.configure(args)
-
-    # Start server
     server.start_webserver(options=args, protocol=PVWSDServer)

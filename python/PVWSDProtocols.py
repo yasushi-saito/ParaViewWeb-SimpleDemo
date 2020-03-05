@@ -6,6 +6,7 @@
 # Brown University
 # March 2018.
 import os, sys, logging, types, inspect, traceback, logging, re, json, base64
+import logging
 from time import time
 
 # import RPC annotation
@@ -41,6 +42,12 @@ class PVWSDTest(pv_protocols.ParaViewWebProtocol):
         ##################################################
         # create a new Cone object
         self.cone1 = simple.Cone()
+        self.cone1.Height = 0.5
+
+        logging.info("CONE: %s", self.cone1)
+        logging.info("CONEDOC: %s", self.cone1.__doc__)
+        logging.info("CONEDOC: %s", self.cone1.Port)
+        logging.info("CONEDOC: %s", self.cone1.Port.__doc__)
 
         ## In a Paraview Trace recorded session, the 'simple.' object is
         ## not necessary.  Take your Trace output and add 'simple.' to all
@@ -67,6 +74,46 @@ class PVWSDTest(pv_protocols.ParaViewWebProtocol):
 
         # change solid color
         self.cone1Display.DiffuseColor = [1.0, 0.666, 0.333]
+
+        # reset view to fit data
+        self.renderView1.ResetCamera()
+
+        # update the view to ensure updated data information
+        self.renderView1.Update()
+
+        # current camera placement for renderView1
+        self.renderView1.CameraPosition = [1.25, 3.0, 2]
+        self.renderView1.CameraViewUp = [-0.75, 0.2, -0.6]
+        self.renderView1.CameraParallelScale = 0.85
+
+    def drawBunny(self):
+
+        ##################################################
+        # create a new Cone object
+        self.mesh = simple.CGNSSeriesReader()
+        logging.info("STLReader: %s", self.mesh.__dict__)
+        logging.info("STLReader: %s", self.mesh.FileNames)
+        self.mesh.FileNames = ["/home/saito/HeatingCoil.cgns" ]
+
+        ## In a Paraview Trace recorded session, the 'simple.' object is
+        ## not necessary.  Take your Trace output and add 'simple.' to all
+        ## the capitalized functions and add 'self.' to the local
+           ## variables, and try just dropping it in here.
+
+        # set active source
+        simple.SetActiveSource(self.mesh)
+
+        # get active view
+        self.renderView1 = simple.GetActiveViewOrCreate('RenderView')
+
+        # show data in view
+        self.meshDisplay = simple.Show(self.mesh, self.renderView1)
+
+        # trace defaults for the display properties.
+        self.meshDisplay.Representation = 'Surface'
+
+        # reset view to fit data
+        self.renderView1.ResetCamera()
 
         # reset view to fit data
         self.renderView1.ResetCamera()

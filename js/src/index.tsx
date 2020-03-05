@@ -102,6 +102,7 @@ type PanelState = {
   n: number;
 };
 
+// Shows the cone controls, such as color change.
 class PVWSDControlPanel extends React.Component<{}, PanelState> {
   state: PanelState = {n: 12};
 
@@ -142,9 +143,11 @@ class PVWSDControlPanel extends React.Component<{}, PanelState> {
 }
 
 type RenderWindowProps = {
+  // Singleton SmartConnect instance.
   connector: any,
 }
 
+// Wraps the main paraview render window inside React component.
 class PVWSDRenderWindow extends React.Component<RenderWindowProps, {}> {
   private pvTarget = React.createRef<HTMLDivElement>();
   private rpcClient: RpcClient;
